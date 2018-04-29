@@ -15,7 +15,7 @@ namespace WoolworthsProductSearch.Services
         private Uri baseAddress = new Uri("https://www.woolworths.com.au/apis/ui/Search/");
 
         // search from https://www.woolworths.com.au/shop/search/products?searchTerm=smith%20chips
-        public async Task<JObject> Search(string productName)
+        public async Task<IEnumerable<Product>> Search(string productName)
         {
             var cookieContainer = new CookieContainer();
             using (var handler = new HttpClientHandler() { CookieContainer = cookieContainer })
@@ -25,9 +25,9 @@ namespace WoolworthsProductSearch.Services
 
                 var productSearch = new ProductSearch { SearchTerm = productName };
                 HttpResponseMessage response = await client.PostAsJsonAsync("products", productSearch);
-                var products = await response.Content.ReadAsStringAsync();
-                return JObject.Parse(products);
-
+                var productsn = await response.Content.ReadAsStringAsync();
+                var productList = JObject.Parse(productsn)["Products"].Select(x => x.ToObject<RootObject>());
+                return productList.Select(x => x.Products.First());
             }
         }
 
