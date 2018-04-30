@@ -13,11 +13,19 @@ namespace WoolworthsProductSearch.Controllers
     public class SearchSpecialsController : Controller
     {
         // GET api/searchspecials/5
-        [HttpGet("{productName}")]
-        public async Task<IEnumerable<Product>> Get(string productName)
+        [HttpGet("product/{productName}")]
+        public async Task<IEnumerable<Product>> GetSpecialsByProductName(string productName)
         {
             var searchService = new ProductSearchService();
-            var products =  await searchService.Search(productName);
+            var products = await searchService.Search(productName);
+            return products.Where(x => x.IsOnSpecial);
+        }
+
+        [HttpGet("{category}")]
+        public async Task<IEnumerable<Product>> GetSpecialsByCategory(string category = null)
+        {
+            var searchService = new ProductSearchService();
+            var products = await searchService.SearchSpecials(category);
             return products.Where(x => x.IsOnSpecial);
         }
     }

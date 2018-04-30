@@ -12,11 +12,10 @@ namespace WoolworthsProductSearch.Services
 {
     public class ProductSearchService
     {
-        private Uri baseAddress = new Uri("https://www.woolworths.com.au/apis/ui/Search/");
-
         // search from https://www.woolworths.com.au/shop/search/products?searchTerm=smith%20chips
         public async Task<IEnumerable<Product>> Search(string productName)
         {
+            Uri baseAddress = new Uri("https://www.woolworths.com.au/apis/ui/Search/");
             var cookieContainer = new CookieContainer();
             using (var handler = new HttpClientHandler() { CookieContainer = cookieContainer })
             using (var client = new HttpClient(new LoggingHandler(handler)) { BaseAddress = baseAddress })
@@ -31,16 +30,46 @@ namespace WoolworthsProductSearch.Services
             }
         }
 
-        private void SetCookies(CookieContainer cookieContainer)
+        public async Task<IEnumerable<Product>> SearchSpecials(string category)
         {
-            var cookieCopied = @"ASP.NET_SessionId=yvynsfkyxoygrv4icz44v1vp; w-rsjhf=PGcgdD0iOWZlY2IwMmVlOTQxNGQzY2IzMWE5NzI4ZDY1YzNmMjFnaXpkaXJndWxlIiAvPg==; ARRAffinity=2bc54e4d044ced332ea3aae306cbc27d4c0b6f28e34dc26f8098205225685c6b; check=true; AMCVS_4353388057AC8D357F000101%40AdobeOrg=1; cvo_sid1=9Z53JQYR9GPY;";
-            var cookies = cookieCopied.Split("; ");
-            foreach (string cookieKeyValue in cookies)
+            Uri baseAddress = new Uri("https://www.woolworths.com.au/apis/ui/browse/");
+            var cookieContainer = new CookieContainer();
+            using (var handler = new HttpClientHandler() { CookieContainer = cookieContainer })
+            using (var client = new HttpClient(new LoggingHandler(handler)) { BaseAddress = baseAddress })
             {
-                var cookie = cookieKeyValue.Split('=');
-                cookieContainer.Add(baseAddress, new Cookie(cookie[0], cookie[0]));
+                var specialsSearch = GetSpecialsSearchParam(category);
+                HttpResponseMessage response = await client.PostAsJsonAsync("category", specialsSearch);
+                var productsn = await response.Content.ReadAsStringAsync();
+                var productList = JObject.Parse(productsn)["Bundles"].Select(x => x.ToObject<RootObject>());
+                return productList.Select(x => x.Products.First());
             }
+        }
 
+        private SpecialsSearch GetSpecialsSearchParam(string category)
+        {
+            // based on results of https://www.woolworths.com.au/apis/ui/PiesCategoriesWithSpecials/ api call
+            switch (category.ToLower())
+            {
+                case ("bakery"):
+                    return new SpecialsSearch("bakery", "specialsgroup.1292.1_DEB537E");
+                case ("fridge"):
+                    return new SpecialsSearch("dairy-eggs-fridge", "specialsgroup.1292.1_6E4F4E4");
+                case ("pantry"):
+                    return new SpecialsSearch("pantry", "specialsgroup.1292.1_39FD49C");
+                case ("freezer"):
+                    return new SpecialsSearch("freezer", "specialsgroup.1292.1_ACA2FC2");
+                case ("drinks"):
+                    return new SpecialsSearch("drinks", "specialsgroup.1292.1_5AF3A0A");
+                case ("pet"):
+                    return new SpecialsSearch("pet", "specialsgroup.1292.1_61D6FEB");
+                case ("health-beauty"):
+                    return new SpecialsSearch("health-beauty", "specialsgroup.1292.1_894D0A8");
+                case ("household"):
+                    return new SpecialsSearch("household", "specialsgroup.1292.1_2432B58");
+                case ("lunchbox"):
+                    return new SpecialsSearch("lunch-box", "specialsgroup.1292.1_9E92C35");
+            }
+            return new SpecialsSearch();
         }
     }
 }
